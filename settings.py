@@ -1,1 +1,0 @@
-login = dict(id = 'nick')
