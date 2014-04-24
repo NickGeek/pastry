@@ -9,6 +9,7 @@ import changeDetails #The settings dialog area, only one thing in there right no
 import threading #Multithreading
 import signal #Handle Ctrl + C
 import sys #Exiting
+import easygui as eg #Graphics
 
 #Setup variables
 currentClipboard = pyperclip.paste()
@@ -35,7 +36,10 @@ def sendClipboard(clipboard):
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
 
 	#Send the clipboard
-	sock.sendto(settings.login['id']+"##"+clipboard, (MCAST_ADDR,MCAST_PORT))
+	try:
+		sock.sendto(settings.login['id']+"##"+clipboard, (MCAST_ADDR,MCAST_PORT))
+	except:
+		eg.msgbox("There was an error sending this copy across the network.", "Pastry")
 
 	#End the connection
 	sock.close()
