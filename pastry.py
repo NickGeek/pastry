@@ -38,7 +38,7 @@ def sendClipboard(clipboard):
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
 
 	#Send the clipboard
-	copiedText = json.dumps({"id": settings.login['id'], "data": clipboard}).encode("utf-8")
+	copiedText = json.dumps({"id": settings.login['id'], "data": clipboard.decode('utf-8')}).encode("utf-8")
 	copiedText = zlib.compress(copiedText, 9)
 	try:
 		sock.sendto(copiedText, (MCAST_ADDR,MCAST_PORT))
@@ -68,15 +68,18 @@ def listen():
 		except socket.error:
 			pass
 		else:
-			data = zlib.decompress(data).decode("utf-8")
-			data = json.loads(data)
-			print(data)
+			try:
+				data = zlib.decompress(data).decode("utf-8")
+				data = json.loads(data)
+				print(data)
 
-			#Is this the clipboard we are looking for?
-			if data['id'] == settings.login['id']:
-				pyperclip.copy(data['data'])
-				currentClipboard = pyperclip.paste()
-				# print(pyperclip.paste())
+				#Is this the clipboard we are looking for?
+				if data['id'] == settings.login['id']:
+					pyperclip.copy(data['data'])
+					currentClipboard = pyperclip.paste()
+					# print(pyperclip.paste())
+			except Exception as e:
+				print("Error: %s" % str(e))
 
 if __name__ == '__main__':
 	#Start the listener
