@@ -1,5 +1,5 @@
-#Pastry v0.1
-#Written for Python 2.7.5
+#Pastry v1.0
+#Written for Python 3
 
 #Imports
 import pyperclip
