@@ -27,43 +27,45 @@ except:
 import settings
 
 ANY = '0.0.0.0'
-MCAST_ADDR = '224.168.2.9'
-MCAST_PORT = 8946
+MCAST_ADDR = '224.1.1.1'
+MCAST_PORT = 2679
 listenSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
 #Send out the new clipboard
 def sendClipboard(clipboard):
+	global listenSock
 	#Hook up the multicast
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-	SENDERPORT=1501
-	sock.bind((ANY,SENDERPORT))
-	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
+	# sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	listenSock.bind((ANY, MCAST_PORT))
+	listenSock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)
 
 	#Send the clipboard
 	try:
-		print(type(clipboard))
-		copiedText = json.dumps({"id": settings.login['id'], "data": clipboard.decode('utf-8')}).encode("utf-8")
+		if isinstance(clipboard, bytes):
+			clipboard = clipboard.clipboard.decode('utf-8')
+		copiedText = json.dumps({"id": settings.login['id'], "data": clipboard}).encode("utf-8")
 		copiedText = zlib.compress(copiedText, 9)
-		sock.sendto(copiedText, (MCAST_ADDR,MCAST_PORT))
+		listenSock.sendto(copiedText, (MCAST_ADDR,MCAST_PORT))
 	except Exception as e:
 		eg.msgbox("There was an error sending your clipboard.", "Pastry")
 		print("Error: %s" % str(e))
 
 	#End the connection
-	sock.close()
+	# listenSock.close()
 
 def listen():
 	global currentClipboard
+	global listenSock
 	while 1:
 		time.sleep(0.1)
 		#Check for external messages
-		listenSock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+		listenSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		listenSock.bind((ANY,MCAST_PORT))
 		listenSock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
 		status = listenSock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(MCAST_ADDR)+socket.inet_aton(ANY))
 
 		try:
-			data, addr = listenSock.recvfrom(1024)
+			data, addr = listenSock.recvfrom(10240)
 		except socket.error:
 			pass
 		else:
@@ -87,6 +89,7 @@ if __name__ == '__main__':
 
 #Handle exit
 def signal_handler(signal, frame):
+	global listenSock
 	listenSock.close()
 	listenerThread.terminate()
 	sys.exit(0)
