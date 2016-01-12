@@ -26,21 +26,24 @@ except:
 	changeDetails.changeDetails()
 import settings
 
+#Socket setup
+ANY = '0.0.0.0'
+MCAST_ADDR = '224.168.2.9'
+MCAST_PORT = 8946
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+
 #Send out the new clipboard
 def sendClipboard(clipboard):
 	#Hook up the multicast
-	ANY = '0.0.0.0'
-	MCAST_ADDR = '224.168.2.9'
-	MCAST_PORT = 8946
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	SENDERPORT=1501
 	sock.bind((ANY,SENDERPORT))
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
 
 	#Send the clipboard
-	copiedText = json.dumps({"id": settings.login['id'], "data": clipboard.decode('utf-8')}).encode("utf-8")
-	copiedText = zlib.compress(copiedText, 9)
 	try:
+		print(type(clipboard))
+		copiedText = json.dumps({"id": settings.login['id'], "data": clipboard.decode('utf-8')}).encode("utf-8")
+		copiedText = zlib.compress(copiedText, 9)
 		sock.sendto(copiedText, (MCAST_ADDR,MCAST_PORT))
 	except Exception as e:
 		eg.msgbox("There was an error sending this copy across the network.", "Pastry")
@@ -54,10 +57,6 @@ def listen():
 	while 1:
 		time.sleep(0.1)
 		#Check for external messages
-		ANY = '0.0.0.0'
-		MCAST_ADDR = '224.168.2.9'
-		MCAST_PORT = 8946
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 		sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 		sock.bind((ANY,MCAST_PORT))
 		sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
@@ -88,6 +87,7 @@ if __name__ == '__main__':
 
 #Handle exit
 def signal_handler(signal, frame):
+	sock.close()
 	listenerThread.terminate()
 	sys.exit()
 signal.signal(signal.SIGINT, signal_handler)
