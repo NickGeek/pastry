@@ -45,13 +45,17 @@ def sendClipboard(clipboard):
 	#Send the clipboard
 	try:
 		if isinstance(clipboard, bytes):
-			clipboard = clipboard.clipboard.decode('utf-8')
+			clipboard = clipboard.decode('utf-8')
 		copiedText = json.dumps({"id": settings.login['id'], "data": clipboard}).encode("utf-8")
 		copiedText = zlib.compress(copiedText, 9)
-		sock.sendto(copiedText, (MCAST_ADDR,MCAST_PORT))
+		
+		#Make sure we don't send more than the buffer
+		if sys.getsizeof(copiedText) < 10240:
+			sock.sendto(copiedText, (MCAST_ADDR,MCAST_PORT))
+		else:
+			eg.msgbox("Pastry can't send that much data. Try sending the text in segments.", "Pastry")
 	except Exception as e:
-		eg.msgbox("There was an error sending your clipboard.", "Pastry")
-		print("Error: %s" % str(e))
+		eg.msgbox("There was an error sending your copy. {0}".format(e), "Pastry")
 
 	#End the connection
 	sock.close()
@@ -62,14 +66,14 @@ def listen():
 	while 1:
 		time.sleep(0.1)
 		try:
-			data, addr = listenSock.recv()
+			data = listenSock.recvfrom(10240)[0]
 		except socket.error:
 			pass
 		else:
 			try:
 				data = zlib.decompress(data).decode("utf-8")
 				data = json.loads(data)
-				print(data)
+				# print(data)
 
 				#Is this the clipboard we are looking for?
 				if data['id'] == settings.login['id']:
@@ -77,7 +81,7 @@ def listen():
 					currentClipboard = pyperclip.paste()
 					# print(pyperclip.paste())
 			except Exception as e:
-				print("Error: %s" % str(e))
+				print("Listening Error: %s" % str(e))
 
 if __name__ == '__main__':
 	#Start the listener
