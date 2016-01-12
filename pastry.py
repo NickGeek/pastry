@@ -77,9 +77,11 @@ def listen():
 				currentClipboard = pyperclip.paste()
 				# print(pyperclip.paste())
 
-#Start the listener
-listenerThread = Process(target=listen, daemon=True)
-listenerThread.start()
+if __name__ == '__main__':
+	#Start the listener
+	listenerThread = Process(target=listen, daemon=True)
+	listenerThread.start()
+	listenerThread.join()
 
 #Handle exit
 def signal_handler(signal, frame):
