@@ -26,15 +26,15 @@ except:
 	changeDetails.changeDetails()
 import settings
 
-#Socket setup
 ANY = '0.0.0.0'
 MCAST_ADDR = '224.168.2.9'
 MCAST_PORT = 8946
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+listenSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
 #Send out the new clipboard
 def sendClipboard(clipboard):
 	#Hook up the multicast
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	SENDERPORT=1501
 	sock.bind((ANY,SENDERPORT))
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
@@ -57,13 +57,13 @@ def listen():
 	while 1:
 		time.sleep(0.1)
 		#Check for external messages
-		sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-		sock.bind((ANY,MCAST_PORT))
-		sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
-		status = sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(MCAST_ADDR)+socket.inet_aton(ANY))
+		listenSock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+		listenSock.bind((ANY,MCAST_PORT))
+		listenSock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
+		status = listenSock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(MCAST_ADDR)+socket.inet_aton(ANY))
 
 		try:
-			data, addr = sock.recvfrom(1024)
+			data, addr = listenSock.recvfrom(1024)
 		except socket.error:
 			pass
 		else:
@@ -87,10 +87,11 @@ if __name__ == '__main__':
 
 #Handle exit
 def signal_handler(signal, frame):
-	sock.close()
+	listenSock.close()
 	listenerThread.terminate()
-	sys.exit()
+	sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 while 1:
 	#Check for clipboard changes every 100ms
