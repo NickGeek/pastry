@@ -46,7 +46,7 @@ def sendClipboard(clipboard):
 		copiedText = zlib.compress(copiedText, 9)
 		sock.sendto(copiedText, (MCAST_ADDR,MCAST_PORT))
 	except Exception as e:
-		eg.msgbox("There was an error sending this copy across the network.", "Pastry")
+		eg.msgbox("There was an error sending your clipboard.", "Pastry")
 		print("Error: %s" % str(e))
 
 	#End the connection
