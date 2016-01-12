@@ -41,7 +41,7 @@ def sendClipboard(clipboard):
 	copiedText = json.dumps({"id": settings.login['id'], "data": clipboard}).encode("utf-8")
 	copiedText = zlib.compress(copiedText, 9)
 	try:
-		sock.sendto(codecs.encode(copiedText, (MCAST_ADDR,MCAST_PORT))
+		sock.sendto(codecs.encode(copiedText, (MCAST_ADDR,MCAST_PORT)))
 	except Exception as e:
 		eg.msgbox("There was an error sending this copy across the network.", "Pastry")
 		print("Error: %s" % str(e))
@@ -73,7 +73,7 @@ def listen():
 
 			#Is this the clipboard we are looking for?
 			if data['id'] == settings.login['id']:
-				pyperclip.copy(data['data'])
+				pyperclip.copy(data[''])
 				currentClipboard = pyperclip.paste()
 				# print(pyperclip.paste())
 
