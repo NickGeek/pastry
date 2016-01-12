@@ -2,14 +2,16 @@
 #Written for Python 2.7.5
 
 #Imports
-import pyperclip #Awesome library for cross-platform copy/paste
-import time #I love importing time. It sounds very fancy
-import socket #Networking so the clipboard can be multicast
+import pyperclip
+import time
+import socket
 import changeDetails #The settings dialog area, only one thing in there right now but that can change
-import threading #Multithreading
 import signal #Handle Ctrl + C
 import sys #Exiting
 import easygui as eg #Graphics
+import json
+from multiprocessing import Process
+import zlib
 
 #Setup variables
 currentClipboard = pyperclip.paste()
@@ -36,10 +38,13 @@ def sendClipboard(clipboard):
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
 
 	#Send the clipboard
+	copiedText = json.dumps({"id": settings.login['id'], "data": clipboard}).encode("utf-8")
+	copiedText = zlib.compress(copiedText, 9)
 	try:
-		sock.sendto(settings.login['id']+"##"+clipboard, (MCAST_ADDR,MCAST_PORT))
-	except:
+		sock.sendto(codecs.encode(copiedText, (MCAST_ADDR,MCAST_PORT))
+	except Exception as e:
 		eg.msgbox("There was an error sending this copy across the network.", "Pastry")
+		print("Error: %s" % str(e))
 
 	#End the connection
 	sock.close()
@@ -60,26 +65,26 @@ def listen():
 
 		try:
 			data, addr = sock.recvfrom(1024)
-		except socket.error, e:
+		except socket.error:
 			pass
 		else:
-			data = data.split("##")
+			data = zlib.decompress(data)
+			data = json.loads(data)
 
 			#Is this the clipboard we are looking for?
-			if data[0] == settings.login['id']:
-				pyperclip.copy(data[1])
+			if data['id'] == settings.login['id']:
+				pyperclip.copy(data['data'])
 				currentClipboard = pyperclip.paste()
-				#print(pyperclip.paste())
+				# print(pyperclip.paste())
 
 #Start the listener
-listenerThread = threading.Thread(target=listen)
-listenerThread.isDaemon()
+listenerThread = Process(target=listen, daemon=True)
 listenerThread.start()
 
 #Handle exit
 def signal_handler(signal, frame):
-	listenerThread._Thread__stop()
-	sys.exit(0)
+	listenerThread.terminate()
+	sys.exit()
 signal.signal(signal.SIGINT, signal_handler)
 
 while 1:
